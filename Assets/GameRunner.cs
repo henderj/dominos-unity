@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GameRunner : MonoBehaviour
 {
-    [SerializeField] private DisplayWrapperText displayWrapperText;
+    [SerializeField] private DisplayWrapperText displayWrapperText = null;
     private Game _game;
 
     private void Awake()
