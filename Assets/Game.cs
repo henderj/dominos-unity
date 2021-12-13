@@ -6,13 +6,15 @@ using UnityEngine;
 public class Game
 {
     private const int NumPlayers = 4;
-    private int _terminatingScore = 200;
-    private readonly List<TurnData> _roundHistory = new List<TurnData>(150);
-    private Player _nextPlayer;
-    private Player _winner;
-    private bool _firstGameRoundStepFlag;
 
     private readonly IDisplayWrapper _displayWrapper;
+
+    private readonly List<Domino> _playedDominoes = new List<Domino>(28);
+    private readonly List<TurnData> _roundHistory = new List<TurnData>(150);
+    private bool _firstGameRoundStepFlag;
+    private Player _nextPlayer;
+    private readonly int _terminatingScore = 200;
+    private Player _winner;
 
     public Game(IDisplayWrapper displayWrapper = null)
     {
@@ -21,18 +23,15 @@ public class Game
 
     public Player[] Players { get; private set; } = new Player[NumPlayers];
 
-    public List<Domino> PlayedDominoes { get; } = new List<Domino>(28);
+    public string PlayedDominoesString => string.Join(", ", _playedDominoes);
 
     public int CurrentTurnIndex => Array.IndexOf(Players, _nextPlayer);
 
     private void Reset()
     {
-        PlayedDominoes.Clear();
+        _playedDominoes.Clear();
         _roundHistory.Clear();
-        foreach (var p in Players)
-        {
-            p.Reset();
-        }
+        foreach (var p in Players) p.Reset();
     }
 
 
@@ -65,49 +64,30 @@ public class Game
         }
 
         if (_firstGameRoundStepFlag)
-        {
             foreach (var player in Players)
             {
                 if (!player.HasDoubleSix()) continue;
                 _winner = player;
                 break;
             }
-        }
 
         _nextPlayer = _winner;
-    }
-
-
-    public struct TurnData
-    {
-        public readonly Player Player;
-        public readonly bool DidPlay;
-        public readonly Domino[] BeforeTurn;
-        public Domino? DominoPlayed;
-
-        public TurnData(Player player, bool didPlay, Domino[] beforeTurn, Domino? domino)
-        {
-            Player = player;
-            DidPlay = didPlay;
-            BeforeTurn = beforeTurn;
-            DominoPlayed = domino;
-        }
     }
 
     private bool Step()
     {
         TurnData turnData;
-        var beforeTurn = new Domino[PlayedDominoes.Count()];
-        PlayedDominoes.CopyTo(beforeTurn);
+        var beforeTurn = new Domino[_playedDominoes.Count()];
+        _playedDominoes.CopyTo(beforeTurn);
         if (_firstGameRoundStepFlag)
         {
-            PlayedDominoes.Add(_nextPlayer.PlayDoubleSix());
+            _playedDominoes.Add(_nextPlayer.PlayDoubleSix());
             turnData = new TurnData(_nextPlayer, true, beforeTurn, new Domino(6, 6));
             _firstGameRoundStepFlag = false;
         }
         else
         {
-            turnData = _nextPlayer.TakeTurn(PlayedDominoes);
+            turnData = _nextPlayer.TakeTurn(_playedDominoes);
         }
 
         _roundHistory.Add(turnData);
@@ -160,11 +140,9 @@ public class Game
         var lastDomino = lastMove.DominoPlayed.Value;
         var head = lastMove.BeforeTurn[0].LeftSide;
         var tail = lastMove.BeforeTurn.Last().RightSide;
-        if ((lastDomino.LeftSide == tail && lastDomino.RightSide == head) ||
-            (lastDomino.RightSide == tail && lastDomino.LeftSide == head))
-        {
+        if (lastDomino.LeftSide == tail && lastDomino.RightSide == head ||
+            lastDomino.RightSide == tail && lastDomino.LeftSide == head)
             GivePointsToTeam(lastPlayer, bonusPoints);
-        }
     }
 
 
@@ -191,10 +169,7 @@ public class Game
             team[1] = Players[3];
         }
 
-        foreach (var p in team)
-        {
-            p.Score += points;
-        }
+        foreach (var p in team) p.Score += points;
     }
 
     private void UpdateScore()
@@ -205,12 +180,12 @@ public class Game
 
     private bool IsLocked()
     {
-        var head = PlayedDominoes[0].LeftSide;
-        var tail = PlayedDominoes.Last().RightSide;
+        var head = _playedDominoes[0].LeftSide;
+        var tail = _playedDominoes.Last().RightSide;
         if (head != tail) return false;
 
         var count = 0;
-        foreach (var domino in PlayedDominoes)
+        foreach (var domino in _playedDominoes)
         {
             if (domino.LeftSide == head) count++;
             if (domino.RightSide == head) count++;
@@ -221,19 +196,13 @@ public class Game
 
     private void DisplayScore()
     {
-        foreach (var player in Players)
-        {
-            Debug.Log($"{player.Name}: {player.Score}");
-        }
+        foreach (var player in Players) Debug.Log($"{player.Name}: {player.Score}");
     }
 
     public void PlayRound()
     {
         NewRound();
-        while (Step())
-        {
-            _displayWrapper.DisplayGame(this);
-        }
+        while (Step()) _displayWrapper.DisplayGame(this);
 
         _displayWrapper.DisplayGame(this);
         UpdateScore();
@@ -243,5 +212,22 @@ public class Game
     {
         NewGame();
         while (_winner.Score < _terminatingScore) PlayRound();
+    }
+
+
+    public struct TurnData
+    {
+        public readonly Player Player;
+        public readonly bool DidPlay;
+        public readonly Domino[] BeforeTurn;
+        public Domino? DominoPlayed;
+
+        public TurnData(Player player, bool didPlay, Domino[] beforeTurn, Domino? domino)
+        {
+            Player = player;
+            DidPlay = didPlay;
+            BeforeTurn = beforeTurn;
+            DominoPlayed = domino;
+        }
     }
 }

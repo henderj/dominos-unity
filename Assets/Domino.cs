@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,13 +11,18 @@ public struct Domino
 
     public Domino(int leftSide, int rightSide)
     {
-        this.LeftSide = leftSide;
-        this.RightSide = rightSide;
+        LeftSide = leftSide;
+        RightSide = rightSide;
     }
 
     public Domino Flip()
     {
         return new Domino(RightSide, LeftSide);
+    }
+
+    public override string ToString()
+    {
+        return $"({LeftSide},{RightSide})";
     }
 
     public static Domino[] GetAllDominoes()
@@ -50,7 +56,7 @@ public struct Domino
             new Domino(4, 6),
             new Domino(5, 5),
             new Domino(5, 6),
-            new Domino(6, 6),
+            new Domino(6, 6)
         };
     }
 }
@@ -60,7 +66,7 @@ public static class EnumerableExtensions
 {
     public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> dominoes)
     {
-        var rnd = new System.Random();
+        var rnd = new Random();
         return dominoes.OrderBy(x => rnd.Next()).ToArray();
     }
 }

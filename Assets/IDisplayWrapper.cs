@@ -5,5 +5,7 @@ public interface IDisplayWrapper
 
 public class DisplayWrapperNone : IDisplayWrapper
 {
-    public void DisplayGame(Game game){}
+    public void DisplayGame(Game game)
+    {
+    }
 }
