@@ -1,31 +1,31 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 public struct Move
 {
-    public bool InsertAtEnd;
+    public readonly bool InsertAtEnd;
     public Domino Domino;
-    public bool Flip;
+    public readonly bool Flip;
 
     public Move(bool insertAtEnd, Domino domino, bool flip)
     {
-        this.InsertAtEnd = insertAtEnd;
-        this.Domino = domino;
-        this.Flip = flip;
+        InsertAtEnd = insertAtEnd;
+        Domino = domino;
+        Flip = flip;
     }
 }
 
 public class Player
 {
     public int Score;
-    public string Name;
+    public readonly string Name;
 
     private List<Domino> _hand;
-    private IMoveChooser _chooser;
+    private readonly IMoveChooser _chooser;
 
-    public Player(IMoveChooser chooser = null)
+    public Player(string name, IMoveChooser chooser = null)
     {
+        Name = name;
         _chooser = chooser ?? new RandomChooser();
     }
 

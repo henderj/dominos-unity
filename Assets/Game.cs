@@ -3,25 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
 public class Game
 {
-    private int _numPlayers = 4;
+    private const int NumPlayers = 4;
     private int _terminatingScore = 200;
-    private int _gameNum = 1;
-    private int _roundNum = 1;
-    private List<Domino> _playedDominos = new List<Domino>(28);
-    private List<TurnData> _roundHistory = new List<TurnData>(150);
-    private Player[] _players = new Player[4];
+    private readonly List<Domino> _playedDominoes = new List<Domino>(28);
+    private readonly List<TurnData> _roundHistory = new List<TurnData>(150);
+    private Player[] _players = new Player[NumPlayers];
     private Player _nextPlayer;
     private Player _winner;
-    private bool _firstGameRoundStepFlag = false;
+    private bool _firstGameRoundStepFlag;
 
-    private IDisplayWrapper _displayWrapper;
+    private readonly IDisplayWrapper _displayWrapper;
+
+    public Game(IDisplayWrapper displayWrapper = null)
+    {
+        _displayWrapper = displayWrapper ?? new DisplayWrapperNone();
+    }
 
     private void Reset()
     {
-        _playedDominos.Clear();
+        _playedDominoes.Clear();
         _roundHistory.Clear();
         foreach (var p in _players)
         {
@@ -32,7 +34,14 @@ public class Game
 
     private void NewGame()
     {
-        _players = new[] {new Player(), new Player(), new Player(), new Player()};
+        var count = 0;
+        _players = new[]
+        {
+            new Player($"P{count++}"),
+            new Player($"P{count++}"),
+            new Player($"P{count++}"),
+            new Player($"P{count}")
+        };
         Reset();
         _winner = _players[0];
         _firstGameRoundStepFlag = true;
@@ -67,9 +76,9 @@ public class Game
 
     public struct TurnData
     {
-        public Player Player;
-        public bool DidPlay;
-        public Domino[] BeforeTurn;
+        public readonly Player Player;
+        public readonly bool DidPlay;
+        public readonly Domino[] BeforeTurn;
         public Domino? DominoPlayed;
 
         public TurnData(Player player, bool didPlay, Domino[] beforeTurn, Domino? domino)
@@ -84,17 +93,17 @@ public class Game
     private bool Step()
     {
         TurnData turnData;
-        var beforeTurn = new Domino[_playedDominos.Count()];
-        _playedDominos.CopyTo(beforeTurn);
+        var beforeTurn = new Domino[_playedDominoes.Count()];
+        _playedDominoes.CopyTo(beforeTurn);
         if (_firstGameRoundStepFlag)
         {
-            _playedDominos.Add(_nextPlayer.PlayDoubleSix());
+            _playedDominoes.Add(_nextPlayer.PlayDoubleSix());
             turnData = new TurnData(_nextPlayer, true, beforeTurn, new Domino(6, 6));
             _firstGameRoundStepFlag = false;
         }
         else
         {
-            turnData = _nextPlayer.TakeTurn(_playedDominos);
+            turnData = _nextPlayer.TakeTurn(_playedDominoes);
         }
 
         _roundHistory.Add(turnData);
@@ -151,7 +160,6 @@ public class Game
             (lastDomino.RightSide == tail && lastDomino.LeftSide == head))
         {
             GivePointsToTeam(lastPlayer, bonusPoints);
-            return;
         }
     }
 
@@ -193,12 +201,12 @@ public class Game
 
     private bool IsLocked()
     {
-        var head = _playedDominos[0].LeftSide;
-        var tail = _playedDominos.Last().RightSide;
+        var head = _playedDominoes[0].LeftSide;
+        var tail = _playedDominoes.Last().RightSide;
         if (head != tail) return false;
 
         var count = 0;
-        foreach (var domino in _playedDominos)
+        foreach (var domino in _playedDominoes)
         {
             if (domino.LeftSide == head) count++;
             if (domino.RightSide == head) count++;
