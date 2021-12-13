@@ -1,16 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public interface IDisplayWrapper
-{
-    public void DisplayGame(Game game);
-}
 
-
-public class Game : MonoBehaviour
+public class Game
 {
     private int _numPlayers = 4;
     private int _terminatingScore = 200;
@@ -217,7 +211,7 @@ public class Game : MonoBehaviour
     {
         foreach (var player in _players)
         {
-            print($"{player.Name}: {player.Score}");
+            Debug.Log($"{player.Name}: {player.Score}");
         }
     }
 

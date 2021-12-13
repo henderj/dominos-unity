@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Random = UnityEngine.Random;
 
 public struct Move
 {
@@ -14,19 +13,6 @@ public struct Move
         this.InsertAtEnd = insertAtEnd;
         this.Domino = domino;
         this.Flip = flip;
-    }
-}
-
-public interface IMoveChooser
-{
-    public Move Choose(Move[] moves, Domino[] playedDominoes);
-}
-
-public class RandomChooser : IMoveChooser
-{
-    public Move Choose(Move[] moves, Domino[] playedDominoes)
-    {
-        return moves[Random.Range(0, moves.Length)];
     }
 }
 
