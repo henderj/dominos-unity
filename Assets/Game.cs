@@ -7,9 +7,7 @@ public class Game
 {
     private const int NumPlayers = 4;
     private int _terminatingScore = 200;
-    private readonly List<Domino> _playedDominoes = new List<Domino>(28);
     private readonly List<TurnData> _roundHistory = new List<TurnData>(150);
-    private Player[] _players = new Player[NumPlayers];
     private Player _nextPlayer;
     private Player _winner;
     private bool _firstGameRoundStepFlag;
@@ -21,11 +19,17 @@ public class Game
         _displayWrapper = displayWrapper ?? new DisplayWrapperNone();
     }
 
+    public Player[] Players { get; private set; } = new Player[NumPlayers];
+
+    public List<Domino> PlayedDominoes { get; } = new List<Domino>(28);
+
+    public int CurrentTurnIndex => Array.IndexOf(Players, _nextPlayer);
+
     private void Reset()
     {
-        _playedDominoes.Clear();
+        PlayedDominoes.Clear();
         _roundHistory.Clear();
-        foreach (var p in _players)
+        foreach (var p in Players)
         {
             p.Reset();
         }
@@ -35,7 +39,7 @@ public class Game
     private void NewGame()
     {
         var count = 0;
-        _players = new[]
+        Players = new[]
         {
             new Player($"P{count++}"),
             new Player($"P{count++}"),
@@ -43,7 +47,7 @@ public class Game
             new Player($"P{count}")
         };
         Reset();
-        _winner = _players[0];
+        _winner = Players[0];
         _firstGameRoundStepFlag = true;
     }
 
@@ -54,7 +58,7 @@ public class Game
         var pool = Domino.GetAllDominoes();
         pool = pool.Shuffle().ToArray();
         var i = 0;
-        foreach (var p in _players)
+        foreach (var p in Players)
         {
             p.GiveDominoes(pool.Skip(i * 7).Take(7));
             i++;
@@ -62,7 +66,7 @@ public class Game
 
         if (_firstGameRoundStepFlag)
         {
-            foreach (var player in _players)
+            foreach (var player in Players)
             {
                 if (!player.HasDoubleSix()) continue;
                 _winner = player;
@@ -93,17 +97,17 @@ public class Game
     private bool Step()
     {
         TurnData turnData;
-        var beforeTurn = new Domino[_playedDominoes.Count()];
-        _playedDominoes.CopyTo(beforeTurn);
+        var beforeTurn = new Domino[PlayedDominoes.Count()];
+        PlayedDominoes.CopyTo(beforeTurn);
         if (_firstGameRoundStepFlag)
         {
-            _playedDominoes.Add(_nextPlayer.PlayDoubleSix());
+            PlayedDominoes.Add(_nextPlayer.PlayDoubleSix());
             turnData = new TurnData(_nextPlayer, true, beforeTurn, new Domino(6, 6));
             _firstGameRoundStepFlag = false;
         }
         else
         {
-            turnData = _nextPlayer.TakeTurn(_playedDominoes);
+            turnData = _nextPlayer.TakeTurn(PlayedDominoes);
         }
 
         _roundHistory.Add(turnData);
@@ -166,25 +170,25 @@ public class Game
 
     private Player GetNextPlayerIndex()
     {
-        var index = Array.IndexOf(_players, _nextPlayer);
-        index = (index + 1) % _players.Length;
-        return _players[index];
+        var index = Array.IndexOf(Players, _nextPlayer);
+        index = (index + 1) % Players.Length;
+        return Players[index];
     }
 
 
     private void GivePointsToTeam(Player player, int points)
     {
-        var index = Array.IndexOf(_players, player);
+        var index = Array.IndexOf(Players, player);
         var team = new Player[2];
         if (index == 0 || index == 2)
         {
-            team[0] = _players[0];
-            team[1] = _players[2];
+            team[0] = Players[0];
+            team[1] = Players[2];
         }
         else
         {
-            team[0] = _players[1];
-            team[1] = _players[3];
+            team[0] = Players[1];
+            team[1] = Players[3];
         }
 
         foreach (var p in team)
@@ -195,18 +199,18 @@ public class Game
 
     private void UpdateScore()
     {
-        var totalPoints = _players.Sum(p => p.GetPoints());
+        var totalPoints = Players.Sum(p => p.GetPoints());
         GivePointsToTeam(_winner, totalPoints);
     }
 
     private bool IsLocked()
     {
-        var head = _playedDominoes[0].LeftSide;
-        var tail = _playedDominoes.Last().RightSide;
+        var head = PlayedDominoes[0].LeftSide;
+        var tail = PlayedDominoes.Last().RightSide;
         if (head != tail) return false;
 
         var count = 0;
-        foreach (var domino in _playedDominoes)
+        foreach (var domino in PlayedDominoes)
         {
             if (domino.LeftSide == head) count++;
             if (domino.RightSide == head) count++;
@@ -217,7 +221,7 @@ public class Game
 
     private void DisplayScore()
     {
-        foreach (var player in _players)
+        foreach (var player in Players)
         {
             Debug.Log($"{player.Name}: {player.Score}");
         }
