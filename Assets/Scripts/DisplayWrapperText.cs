@@ -17,7 +17,6 @@ public class DisplayWrapperText : MonoBehaviour, IDisplayWrapper
             var indicator = i == game.CurrentTurnIndex ? ">" : " ";
             gameText += $"\n{indicator}{players[i].Name}: {players[i].HandString}";
         }
-
         text.SetText(gameText);
     }
 }

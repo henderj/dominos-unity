@@ -13,7 +13,7 @@ public class Game
     private readonly List<TurnData> _roundHistory = new List<TurnData>(150);
     private bool _firstGameRoundStepFlag;
     private Player _nextPlayer;
-    private readonly int _terminatingScore = 200;
+    private const int TerminatingScore = 200;
     private Player _winner;
 
     public Game(IDisplayWrapper displayWrapper = null)
@@ -35,10 +35,10 @@ public class Game
     }
 
 
-    private void NewGame()
+    public void NewGame(Player[] players = null)
     {
         var count = 0;
-        Players = new[]
+        Players = players ?? new[]
         {
             new Player($"P{count++}"),
             new Player($"P{count++}"),
@@ -51,7 +51,7 @@ public class Game
     }
 
 
-    private void NewRound()
+    public void NewRound()
     {
         Reset();
         var pool = Domino.GetAllDominoes();
@@ -74,7 +74,7 @@ public class Game
         _nextPlayer = _winner;
     }
 
-    private bool Step()
+    public bool Step()
     {
         TurnData turnData;
         var beforeTurn = new Domino[_playedDominoes.Count()];
@@ -92,57 +92,30 @@ public class Game
 
         _roundHistory.Add(turnData);
 
-        CheckForBonusPoints();
+        var bonusPoints = GameRules.GetBonusPoints(_roundHistory, Players, _playedDominoes);
+        GivePointsToTeam(_nextPlayer, bonusPoints);
 
         if (_nextPlayer.IsHandEmpty())
         {
             _winner = _nextPlayer;
+            GiveEndOfRoundPoints();
+            _displayWrapper.DisplayGame(this);
             return false;
         }
 
-        if (IsLocked())
+        if (GameRules.IsLocked(_playedDominoes))
         {
             var pCurrent = _nextPlayer;
             var pNext = GetNextPlayerIndex();
             _winner = pCurrent.GetPoints() < pNext.GetPoints() ? pCurrent : pNext;
+            GiveEndOfRoundPoints();
+            _displayWrapper.DisplayGame(this);
             return false;
         }
 
         _nextPlayer = GetNextPlayerIndex();
+        _displayWrapper.DisplayGame(this);
         return true;
-    }
-
-    private void CheckForBonusPoints()
-    {
-        const int bonusPoints = 25;
-        if (_roundHistory.Count() < 2) return;
-        var lastMove = _roundHistory.Last();
-        if (lastMove.DidPlay) return;
-        var lastPlayer = lastMove.Player;
-        if (_roundHistory.Count() == 2)
-        {
-            GivePointsToTeam(lastPlayer, bonusPoints);
-            return;
-        }
-
-        if (_roundHistory.Count() < 4) return;
-        var lastFour = _roundHistory.Skip(_roundHistory.Count() - 4).Take(4).ToArray();
-        if (lastFour[0].DidPlay && lastFour.Skip(1).Take(3).All(move => move.DidPlay == false))
-        {
-            var player = lastFour[0].Player;
-            GivePointsToTeam(player, bonusPoints);
-            return;
-        }
-
-        if (lastPlayer.IsHandEmpty() == false) return;
-
-        if (lastMove.DominoPlayed == null) return;
-        var lastDomino = lastMove.DominoPlayed.Value;
-        var head = lastMove.BeforeTurn[0].LeftSide;
-        var tail = lastMove.BeforeTurn.Last().RightSide;
-        if (lastDomino.LeftSide == tail && lastDomino.RightSide == head ||
-            lastDomino.RightSide == tail && lastDomino.LeftSide == head)
-            GivePointsToTeam(lastPlayer, bonusPoints);
     }
 
 
@@ -172,27 +145,12 @@ public class Game
         foreach (var p in team) p.Score += points;
     }
 
-    private void UpdateScore()
+    private void GiveEndOfRoundPoints()
     {
         var totalPoints = Players.Sum(p => p.GetPoints());
         GivePointsToTeam(_winner, totalPoints);
     }
 
-    private bool IsLocked()
-    {
-        var head = _playedDominoes[0].LeftSide;
-        var tail = _playedDominoes.Last().RightSide;
-        if (head != tail) return false;
-
-        var count = 0;
-        foreach (var domino in _playedDominoes)
-        {
-            if (domino.LeftSide == head) count++;
-            if (domino.RightSide == head) count++;
-        }
-
-        return count == 8;
-    }
 
     private void DisplayScore()
     {
@@ -205,29 +163,28 @@ public class Game
         while (Step()) _displayWrapper.DisplayGame(this);
 
         _displayWrapper.DisplayGame(this);
-        UpdateScore();
+        GiveEndOfRoundPoints();
     }
 
     public void PlayGame()
     {
         NewGame();
-        while (_winner.Score < _terminatingScore) PlayRound();
+        while (_winner.Score < TerminatingScore) PlayRound();
     }
+}
 
+public struct TurnData
+{
+    public readonly Player Player;
+    public readonly bool DidPlay;
+    public readonly Domino[] BeforeTurn;
+    public Domino? DominoPlayed;
 
-    public struct TurnData
+    public TurnData(Player player, bool didPlay, Domino[] beforeTurn, Domino? domino)
     {
-        public readonly Player Player;
-        public readonly bool DidPlay;
-        public readonly Domino[] BeforeTurn;
-        public Domino? DominoPlayed;
-
-        public TurnData(Player player, bool didPlay, Domino[] beforeTurn, Domino? domino)
-        {
-            Player = player;
-            DidPlay = didPlay;
-            BeforeTurn = beforeTurn;
-            DominoPlayed = domino;
-        }
+        Player = player;
+        DidPlay = didPlay;
+        BeforeTurn = beforeTurn;
+        DominoPlayed = domino;
     }
 }

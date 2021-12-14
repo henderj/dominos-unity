@@ -59,11 +59,11 @@ public class Player
         return _hand.Contains(new Domino(6, 6));
     }
 
-    public Game.TurnData TakeTurn(List<Domino> playedDominoes)
+    public TurnData TakeTurn(List<Domino> playedDominoes)
     {
-        var moves = GetLegalMoves(playedDominoes);
+        var moves = GameRules.GetLegalMoves(playedDominoes, _hand);
         var beforeTurn = playedDominoes.ToArray();
-        if (moves.Length == 0) return new Game.TurnData(this, false, beforeTurn, null);
+        if (moves.Length == 0) return new TurnData(this, false, beforeTurn, null);
 
 
         var move = _chooser.Choose(moves, playedDominoes.ToArray());
@@ -71,25 +71,12 @@ public class Player
         if (move.InsertAtEnd) playedDominoes.Add(domino);
         else playedDominoes.Insert(0, domino);
         _hand.Remove(move.Domino);
-        return new Game.TurnData(this, true, beforeTurn, domino);
+        return new TurnData(this, true, beforeTurn, domino);
     }
 
-
-    private Move[] GetLegalMoves(List<Domino> playedDominoes)
+    public bool CanPlay(List<Domino> playedDominoes)
     {
-        if (playedDominoes.Count == 0) return _hand.Select(d => new Move(true, d, false)).ToArray();
-        var head = playedDominoes[0].LeftSide;
-        var tail = playedDominoes.Last().RightSide;
-        var moves = new List<Move>();
-        foreach (var d in _hand)
-        {
-            if (d.LeftSide == tail) moves.Add(new Move(true, d, false));
-            if (d.RightSide == tail) moves.Add(new Move(true, d, true));
-            if (d.LeftSide == head) moves.Add(new Move(false, d, true));
-            if (d.RightSide == head) moves.Add(new Move(false, d, false));
-        }
-
-        return moves.ToArray();
+        return GameRules.GetLegalMoves(playedDominoes, _hand).Length > 0;
     }
 
     public int GetPoints()
